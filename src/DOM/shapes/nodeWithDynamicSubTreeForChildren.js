@@ -1,6 +1,7 @@
 import isArray from '../../util/isArray';
 import isVoid from '../../util/isVoid';
 import { addDOMDynamicAttributes, updateDOMDynamicAttributes } from '../addAttributes';
+import recreateNode from '../recreateNode';
 
 export default function createNodeWithDynamicSubTreeForChildren( templateNode, subTreeForChildren, dynamicAttrs ) {
 	let domNode;
@@ -24,6 +25,10 @@ export default function createNodeWithDynamicSubTreeForChildren( templateNode, s
 			return domNode;
 		},
 		update( lastItem, nextItem, treeLifecycle ) {
+			if ( node !== lastItem.domTree ) {
+				recreateNode( domNode, nextItem, node, treeLifecycle );
+				return domNode;
+			}
 			if ( !isVoid( subTreeForChildren ) ) {
 				if ( isArray( subTreeForChildren ) ) {
 					for ( let i = 0; i < subTreeForChildren.length; i++ ) {
@@ -32,7 +37,17 @@ export default function createNodeWithDynamicSubTreeForChildren( templateNode, s
 						subTree.update( lastItem, nextItem, treeLifecycle );
 					}
 				} else if ( typeof subTreeForChildren === 'object' ) {
-					subTreeForChildren.update( lastItem, nextItem, treeLifecycle );
+					const newDomNode = subTreeForChildren.update( lastItem, nextItem, treeLifecycle );
+
+					if ( newDomNode ) {
+						const replaceNode = domNode.firstChild;
+
+						if ( replaceNode ) {
+							domNode.replaceChild( newDomNode, replaceNode );
+						} else {
+							domNode.appendChild( newDomNode );
+						}
+					}
 				}
 			}
 			if ( dynamicAttrs ) {

@@ -1,3 +1,4 @@
+import isVoid from '../util/isVoid';
 import { isRecyclingEnabled, pool } from './recycling';
 
 const recyclingEnabled = isRecyclingEnabled();
@@ -144,6 +145,33 @@ export function updateKeyed( items, oldItems, parentNode, parentNextNode, treeLi
 	}
 }
 
+// TODO can we improve performance here?
+export function updateNonKeyed( items, oldItems, domNodeList, parentNode, parentNextNode, treeLifecycle ) {
+	const itemsLength = Math.max( items.length, oldItems.length );
+
+	for ( let i = 0; i < itemsLength; i++ ) {
+		const item = items[i];
+		const oldItem = oldItems[i];
+
+		if ( item !== oldItem ) {
+			if ( !isVoid( item ) ) {
+				if ( !isVoid( oldItem ) ) {
+					if ( typeof item === 'string' || typeof item === 'number' ) {
+						domNodeList[i].nodeValue = item;
+					} else if ( typeof item === 'object' ) {
+						// debugger;
+						item.domTree.update( oldItem, item, treeLifecycle );
+					}
+				} else {
+					// TODO
+				}
+			} else {
+				// TODO
+			}
+		}
+	}
+}
+
 export function insertOrAppend( parentNode, newNode, nextNode ) {
 	if ( nextNode ) {
 		parentNode.insertBefore( newNode, nextNode );
@@ -153,8 +181,10 @@ export function insertOrAppend( parentNode, newNode, nextNode ) {
 }
 
 export function remove( item, parentNode ) {
-	parentNode.removeChild( item.rootNode );
-	if ( recyclingEnabled ) {
-		pool( item );
+	if ( item.rootNode !== null ) {
+		parentNode.removeChild( item.rootNode );
+		if ( recyclingEnabled ) {
+			pool( item );
+		}
 	}
 }

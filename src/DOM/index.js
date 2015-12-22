@@ -41,15 +41,25 @@ const template = {
 					const attributeName = propertyInfo.attributeName;
 					const namespace = propertyInfo.attributeNamespace;
 
-					// if 'truthy' value, and boolean, it will be 'propName=propName'
-					if ( propertyInfo.hasBooleanValue && value === true ) {
-						value = attributeName;
-					}
-
-					if ( namespace ) {
-						domNode.setAttributeNS( namespace, attributeName, value );
+					if ( propertyInfo.mustUseProperty ) {
+						if ( propName === 'value' && ( ( vNode !== null && vNode.tag === 'select' ) || ( domNode.tagName === 'SELECT' ) ) ) {
+							setSelectValueForProperty( vNode, domNode, value, useProperties );
+						} else if ( '' + domNode[propName] !== '' + value ) {
+							if ( useProperties ) {
+								domNode[propName] = value;
+							} else {
+								if ( propertyInfo.hasBooleanValue && value === true ) {
+									value = propName;
+								}
+								domNode.setAttribute( propName, value );
+							}
+						}
 					} else {
-						domNode.setAttribute( attributeName, value );
+						if ( namespace ) {
+							domNode.setAttributeNS( namespace, attributeName, value );
+						} else {
+							domNode.setAttribute( attributeName, value );
+						}
 					}
 				}
 			}

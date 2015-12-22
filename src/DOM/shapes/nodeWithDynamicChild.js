@@ -1,11 +1,13 @@
 import isArray from '../../util/isArray';
 import isVoid from '../../util/isVoid';
 import { getValueWithIndex, removeValueTree } from '../../core/variables';
-import { updateKeyed } from '../domMutate';
+import { updateKeyed, updateNonKeyed } from '../domMutate';
 import { addDOMDynamicAttributes, updateDOMDynamicAttributes } from '../addAttributes';
 
 export default function createNodeWithDynamicChild( templateNode, valueIndex, dynamicAttrs ) {
 	let domNode;
+	let keyedChildren = true;
+	const childNodeList = [];
 	const node = {
 		create( item, treeLifecycle ) {
 			domNode = templateNode.cloneNode( false );
@@ -17,11 +19,19 @@ export default function createNodeWithDynamicChild( templateNode, valueIndex, dy
 						const childItem = value[i];
 
 						if ( typeof childItem === 'object' ) {
-							domNode.appendChild( childItem.domTree.create( childItem, treeLifecycle ) );
+							const childNode = childItem.domTree.create( childItem, treeLifecycle );
+
+							if ( childItem.key === undefined ) {
+								keyedChildren = false;
+							}
+							childNodeList.push( childNode );
+							domNode.appendChild( childNode );
 						} else if ( typeof childItem === 'string' || typeof childItem === 'number' ) {
 							const textNode = document.createTextNode( childItem );
 
 							domNode.appendChild( textNode );
+							childNodeList.push( textNode );
+							keyedChildren = false;
 						}
 					}
 				} else if ( typeof value === 'object' ) {
@@ -42,11 +52,15 @@ export default function createNodeWithDynamicChild( templateNode, valueIndex, dy
 			if ( nextValue !== lastValue ) {
 				if ( typeof nextValue === 'string' ) {
 					domNode.firstChild.nodeValue = nextValue;
-				} else if ( nextValue === null ) {
-					// TODO
+				} else if ( isVoid( nextValue ) ) {
+					domNode.parentNode.removeChild( domNode );
 				} else if ( isArray( nextValue ) ) {
 					if ( isArray( lastValue ) ) {
-						updateKeyed( nextValue, lastValue, domNode, null, treeLifecycle );
+						if ( keyedChildren ) {
+							updateKeyed( nextValue, lastValue, domNode, null, treeLifecycle );
+						} else {
+							updateNonKeyed( nextValue, lastValue, childNodeList, domNode, null, treeLifecycle );
+						}
 					} else {
 						// debugger;
 					}

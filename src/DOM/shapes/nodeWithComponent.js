@@ -23,8 +23,8 @@ export default function createNodeWithComponent( componentIndex, props ) {
 
 			currentItem = item;
 			if ( isVoid( Component ) ) {
-				// bad component, make a text node
-				return document.createTextNode( '' );
+				domNode = document.createTextNode( '' );
+				return domNode;
 			} else if ( typeof Component === 'function' ) {
 				// stateless component
 				if ( !Component.prototype.render ) {
@@ -43,11 +43,17 @@ export default function createNodeWithComponent( componentIndex, props ) {
 					lastRender = nextRender;
 					treeLifecycle.addTreeSuccessListener( instance.componentDidMount );
 					instance.forceUpdate = ( ) => {
-						const updatedRender = instance.render( );
+						const nextRender = instance.render( );
 
-						updatedRender.parent = currentItem;
-						updatedRender.domTree.update( lastRender, updatedRender, treeLifecycle );
-						lastRender = updatedRender;
+						nextRender.parent = currentItem;
+						const newDomNode = nextRender.domTree.update( lastRender, nextRender, treeLifecycle );
+
+						lastRender = nextRender;
+						if ( newDomNode ) {
+							domNode = newDomNode;
+							lastRender.rootNode = domNode;
+							return domNode;
+						}
 					};
 				}
 			}
@@ -56,10 +62,9 @@ export default function createNodeWithComponent( componentIndex, props ) {
 		update( lastItem, nextItem, treeLifecycle ) {
 			const Component = getValueWithIndex( nextItem, componentIndex );
 
-			currentItem = nextItem;
 			if ( !Component ) {
 				recreateNode( domNode, nextItem, node, treeLifecycle );
-				return;
+				return domNode;
 			}
 			if ( typeof Component === 'function' ) {
 				// stateless component
@@ -67,19 +72,24 @@ export default function createNodeWithComponent( componentIndex, props ) {
 					const nextRender = new Component( getValueForProps( props, nextItem ) );
 
 					nextRender.parent = currentItem;
-					nextRender.domTree.update( lastRender, nextRender, treeLifecycle );
+					const newDomNode = nextRender.domTree.update( lastRender, nextRender, treeLifecycle );
+
 					lastRender = nextRender;
+					if ( newDomNode ) {
+						domNode = newDomNode;
+						return domNode;
+					}
 				} else {
 					if ( !instance || Component !== instance.constructor ) {
 						recreateNode( domNode, nextItem, node, treeLifecycle );
-						return;
+						return domNode;
 					}
 					const prevProps = instance.props;
 					const prevState = instance.state;
 					const nextState = instance.state;
 					const nextProps = getValueForProps( props, nextItem );
 
-					updateComponent( instance, prevState, nextState, prevProps, nextProps, instance.forceUpdate );
+					return updateComponent( instance, prevState, nextState, prevProps, nextProps, instance.forceUpdate );
 				}
 			}
 		},

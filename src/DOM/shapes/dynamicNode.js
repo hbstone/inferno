@@ -1,5 +1,6 @@
 import isVoid from '../../util/isVoid';
 import { getValueWithIndex, getTypeFromValue, ValueTypes } from '../../core/variables';
+import recreateNode from '../recreateNode';
 
 export default function createDynamicNode( valueIndex ) {
 	let domNode;
@@ -24,6 +25,8 @@ export default function createDynamicNode( valueIndex ) {
 					break;
 				case ValueTypes.EMPTY_OBJECT:
 					throw Error( 'Inferno Error: A valid template node must be returned. You may have returned undefined, an array or some other invalid object.' );
+				case ValueTypes.FUNCTION:
+					throw Error( 'Inferno Error: A valid template node must be returned. You may have returned undefined, an array or some other invalid object.' );
 				default: break;
 			}
 
@@ -38,7 +41,7 @@ export default function createDynamicNode( valueIndex ) {
 				const lastType = getTypeFromValue( lastValue );
 
 				if ( lastType !== nextType ) {
-					// TODO replace node and rebuild
+					recreateNode( domNode, nextItem, node );
 					return;
 				}
 

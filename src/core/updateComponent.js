@@ -17,8 +17,10 @@ export default function updateComponent( component, prevState, nextState, prevPr
 			component._blockSetState = false;
 			component.props = nextProps;
 			component.state = nextState;
-			renderCallback( );
+			const newDomNode = renderCallback();
+
 			component.componentDidUpdate( prevProps, prevState );
+			return newDomNode;
 		}
 	}
 }

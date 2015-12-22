@@ -11,7 +11,7 @@ module.exports = function(config) {
 
         // list of files / patterns to load in the browser
         files: [
-		    '../test/browser/**/*.js',
+            '../test/browser/**/*.js',
             '../test/shared/**/*.js'
         ],
         // list of files to exclude
@@ -26,15 +26,15 @@ module.exports = function(config) {
         webpack: {
             devtool: 'source-map',
             module: {
+                postLoaders: [{
+                    test: /\.js$/,
+                    exclude: /test|node_modules\/dist/,
+                    loader: 'isparta-instrumenter-loader'
+                }],
                 loaders: [{
                     test: /\.js$/,
                     exclude: /node_modules\/dist/,
                     loader: 'babel-loader'
-                }],
-                postLoaders: [{
-                    test: /\.js$/,
-                    exclude: /test|node_modules\/dist/,
-                    loader: 'istanbul-instrumenter'
                 }]
             }
         },
@@ -60,7 +60,6 @@ module.exports = function(config) {
                 dir: '../coverage'
             }]
         },
-
         browsers: ['Chrome'],
         // custom launchers
         customLaunchers: {

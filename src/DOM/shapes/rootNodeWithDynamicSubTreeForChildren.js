@@ -39,8 +39,10 @@ export default function createRootNodeWithDynamicSubTreeForChildren( templateNod
 		},
 		update( lastItem, nextItem, treeLifecycle ) {
 			if ( node !== lastItem.domTree ) {
-				recreateRootNode( lastItem, nextItem, node, treeLifecycle );
-				return;
+				const newDomNode = recreateRootNode( lastItem, nextItem, node, treeLifecycle );
+
+				nextItem.rootNode = newDomNode;
+				return newDomNode;
 			}
 			const domNode = lastItem.rootNode;
 
@@ -49,11 +51,24 @@ export default function createRootNodeWithDynamicSubTreeForChildren( templateNod
 				if ( isArray( subTreeForChildren ) ) {
 					for ( let i = 0; i < subTreeForChildren.length; i++ ) {
 						const subTree = subTreeForChildren[i];
+						const newDomNode = subTree.update( lastItem, nextItem, treeLifecycle );
 
-						subTree.update( lastItem, nextItem, treeLifecycle );
+						if ( newDomNode && domNode.childNodes[i] !== newDomNode ) {
+							domNode.replaceChild( newDomNode, domNode.childNodes[i] );
+						}
 					}
 				} else if ( typeof subTreeForChildren === 'object' ) {
-					subTreeForChildren.update( lastItem, nextItem, treeLifecycle );
+					const newDomNode = subTreeForChildren.update( lastItem, nextItem, treeLifecycle );
+
+					if ( newDomNode ) {
+						const replaceNode = domNode.firstChild;
+
+						if ( replaceNode ) {
+							domNode.replaceChild( newDomNode, replaceNode );
+						} else {
+							domNode.appendChild( newDomNode );
+						}
+					}
 				}
 			}
 			if ( dynamicAttrs ) {
